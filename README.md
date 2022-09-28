@@ -1,6 +1,6 @@
 # yolov5_baseballDetect
 
-Step by Step:
+Step by Steps:
 1. open anaconda
 2. activate your environment
 3. cd ./yolov5_baseball
