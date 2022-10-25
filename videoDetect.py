@@ -4,13 +4,17 @@ import threading
 import time
 import argparse
 import utils.baseball_toolkit as bt
+import numpy as np
 from src import util
 
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 #------------------------threading------------------------
 parser = argparse.ArgumentParser()
-parser.add_argument('--videoPath', type=str, default="./testing_data/side_52.mp4", help='dataset.yaml path')
+parser.add_argument('--videoPath', type=str, default="./testing_data/behind_11.mp4")
+parser.add_argument('--type', type=str, default="behind")
 args = parser.parse_args()
 video_path = args.videoPath
+videoType = args.type
 
 bt.pram_init("./custom_model/baseball_model.pt", './custom_model/body_pose_model.pth')
 noballDetected=0
@@ -22,6 +26,7 @@ class yoloThread():
 		self.switch = True
 		self.vList = vList
 		self.ballTrack = []
+		self.homePlate = []
 		self.noballDetected = 0
 		self.result=[]
 		self.maxPath=[]
@@ -32,7 +37,6 @@ class yoloThread():
 	def update(self):
 		for f in range(len(self.vList)):
 			self.frame = self.vList[f]
-			
 			self.yoloPred = bt.yoloPred(self.frame)
 			for i in range(len(self.yoloPred)):
 				if self.yoloPred[i][5]==0:
@@ -44,6 +48,10 @@ class yoloThread():
 							self.maxPath = self.ballTrack.copy()
 						self.ballTrack=[]
 					self.noballDetected+=1
+
+				if self.yoloPred[i][5]==1:
+					self.homePlate.append([self.yoloPred[i][0], self.yoloPred[i][1], self.yoloPred[i][2], self.yoloPred[i][3]])
+
 			self.result.append(self.ballTrack.copy())
 		self.switch = False
 
@@ -51,7 +59,7 @@ class yoloThread():
 		if self.switch:
 			return "still_working"
 		else:
-			return [self.result, self.maxPath] #[ball path per frame, longest path]
+			return [self.result, self.maxPath, self.homePlate] #[ball path per frame, longest path]
 
 class openposeThread():
 	def __init__(self, vList):
@@ -72,7 +80,6 @@ class openposeThread():
 				self.sResult.append(self.subset)
 		self.switch = False
 		
-			
 	def getReturn(self):
 		if self.switch:
 			return "still_working"
@@ -96,34 +103,66 @@ class openposeThread():
 
 #------------------------main------------------------
 
+def BRS(cap, videoType, visualize=True):
+	vList = bt.cap2list(cap)
+
+	if videoType=="behind":
+		yThread = yoloThread(vList)
+		yList=yThread.getReturn()
+		while (yList=="still_working"):
+			yList=yThread.getReturn()
+			time.sleep(0.5)
+
+		r = np.array(yList[2])
+		plate = np.mean(r, axis=0)
+		
+		Strike = bt.detectStrike(yList[1], plate) 
+		#print(Strike)
+		
+	elif videoType=="side":
+		yThread = yoloThread(vList)
+		oThread = openposeThread(vList)
+
+		oList=oThread.getReturn()
+		yList=yThread.getReturn()
+
+		while (oList=="still_working" or yList=="still_working"):
+			yList=yThread.getReturn()
+			oList=oThread.getReturn()
+			time.sleep(0.5)
+
+
+
+		Strike = bt.detectStrike(yList[1], oList[2]) 
+		#print(Strike)
+
+	if visualize:
+		fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+		out = cv2.VideoWriter('output.mp4', fourcc, 20.0, (382,  640))
+
+		#------------------------visualize------------------------
+
+		for i in range(len(vList)):
+			frame = vList[i]
+			#print(frame.shape) 
+			frame = bt.paintPolyline(frame, yList[0][i])
+
+			if videoType=="side":
+				frame = util.draw_bodypose(frame, oList[0][i//50], oList[1][i//50])
+				frame = cv2.rectangle(frame, (oList[2][0], oList[2][1]), (oList[2][2], oList[2][3]), (0, 0, 255), 2)
+			elif videoType=="behind":
+				frame = cv2.rectangle(frame, (int(plate[0]), int(plate[1])), (int(plate[2]), int(plate[3])), (0, 0, 255), 2)
+
+			cv2.imshow('live', frame)
+			if cv2.waitKey(50) == ord('q'):
+				break
+			out.write(frame)
+
+		out.release()
+		cv2.destroyAllWindows()
+	return Strike
+"""
 cap = cv2.VideoCapture(video_path)
-vList = bt.cap2list(cap)
-yThread = yoloThread(vList)
-oThread = openposeThread(vList)
-
-oList=oThread.getReturn()
-yList=yThread.getReturn()
-while (oList=="still_working" or yList=="still_working"):
-	yList=yThread.getReturn()
-	oList=oThread.getReturn()
-	time.sleep(1)
-
-
-Strike = bt.detectStrike(yList[1], oList[2]) 
+Strike = BRS(cap, videoType, True)
 print(Strike)
-#True -> Strike
-
-
-#------------------------visualize------------------------
-for i in range(len(vList)):
-	frame = vList[i]
-	frame = bt.paintPolyline(frame, yList[0][i])
-	frame = util.draw_bodypose(frame, oList[0][i//50], oList[1][i//50])
-	frame = cv2.rectangle(frame, (oList[2][0], oList[2][1]), (oList[2][2], oList[2][3]), (0, 0, 255), 2)
-
-	cv2.imshow('live', frame)
-	if cv2.waitKey(50) == ord('q'):
-		break
-
-cv2.destroyAllWindows()  
-
+"""
