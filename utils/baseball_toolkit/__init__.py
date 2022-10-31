@@ -19,15 +19,17 @@ classes = None
 agnostic_nms = 2
 max_det = 2
 device = select_device("")
-model=""
 body_estimation=""
-def pram_init(yPath, oPath):
-	global model, body_estimation
 
+def launch_yolo_model(yPath):
 	model = DetectMultiBackend(yPath, device=device, dnn=False, data="./data/baseball_dataset.yaml", fp16=False)
 	stride, names, pt = model.stride, model.names, model.pt
 	model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))
 
+	return model
+
+def pram_init(oPath):
+	global body_estimation
 	body_estimation = Body(oPath)
 
 
@@ -42,16 +44,16 @@ def IoU(box1, box2):
     Union = Area1
     return Intersection/Union
 
-def yoloPred(frame):
+def yoloPred(frame, yolo_model):
 	im = frame.copy()
-	im = letterbox(im, imgsz, model.stride, model.pt)[0]
+	im = letterbox(im, imgsz, 32, True)[0]
 	im = im.transpose((2, 0, 1))[::-1]
 	im = np.ascontiguousarray(im)
 	im = torch.from_numpy(im).to(device)
-	im = im.half() if model.fp16 else im.float()
+	im = im.half() if yolo_model.fp16 else im.float()
 	im /= 255
 	if len(im.shape) == 3:im = im[None]
-	pred = model(im, augment=False, visualize=False)
+	pred = yolo_model(im, augment=False, visualize=False)
 	pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
 
 	pred = pred[0].tolist()
@@ -102,3 +104,18 @@ def detectStrike(pList, sBox):
 
 	return False
 			
+def start(frame, yolo_model):
+	Pred = yoloPred(frame, yolo_model)
+	head_center = [0, 0]
+	glove_center = [0, 0]
+
+	for i in range(len(Pred)):
+		if Pred[i][5]==0:
+			head_center = [Pred[i][0]+((Pred[i][2]-Pred[i][0])/2), Pred[i][1]+((Pred[i][3]-Pred[i][1])/2)]
+		if Pred[i][5]==1:
+			glove_center = [Pred[i][0]+((Pred[i][2]-Pred[i][0])/2), Pred[i][1]+((Pred[i][3]-Pred[i][1])/2)]
+
+	if glove_center[1]<head_center[1]:
+		return True
+	else:
+		return False

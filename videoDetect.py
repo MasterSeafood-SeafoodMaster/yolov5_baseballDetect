@@ -16,13 +16,14 @@ args = parser.parse_args()
 video_path = args.videoPath
 videoType = args.type
 
-bt.pram_init("./custom_model/baseball_model.pt", './custom_model/body_pose_model.pth')
+bt.pram_init('./custom_model/body_pose_model.pth')
 noballDetected=0
 ballTrack=[]
 frame=""
 tLock = threading.Lock()
 class yoloThread():
-	def __init__(self, vList):
+	def __init__(self, vList, yolo_model):
+		self.yolo_model = yolo_model
 		self.switch = True
 		self.vList = vList
 		self.ballTrack = []
@@ -37,7 +38,7 @@ class yoloThread():
 	def update(self):
 		for f in range(len(self.vList)):
 			self.frame = self.vList[f]
-			self.yoloPred = bt.yoloPred(self.frame)
+			self.yoloPred = bt.yoloPred(self.frame, self.yolo_model)
 			for i in range(len(self.yoloPred)):
 				if self.yoloPred[i][5]==0:
 					self.ballTrack.append([ (self.yoloPred[i][0]+self.yoloPred[i][2])//2, (self.yoloPred[i][1]+self.yoloPred[i][3])//2 ])
@@ -103,11 +104,11 @@ class openposeThread():
 
 #------------------------main------------------------
 
-def BRS(cap, videoType, visualize=True):
+def BRS(cap, videoType, visualize, yolo_model):
 	vList = bt.cap2list(cap)
 
 	if videoType=="behind":
-		yThread = yoloThread(vList)
+		yThread = yoloThread(vList, yolo_model)
 		yList=yThread.getReturn()
 		while (yList=="still_working"):
 			yList=yThread.getReturn()
@@ -120,7 +121,7 @@ def BRS(cap, videoType, visualize=True):
 		#print(Strike)
 		
 	elif videoType=="side":
-		yThread = yoloThread(vList)
+		yThread = yoloThread(vList, yolo_model)
 		oThread = openposeThread(vList)
 
 		oList=oThread.getReturn()
@@ -161,8 +162,3 @@ def BRS(cap, videoType, visualize=True):
 		out.release()
 		cv2.destroyAllWindows()
 	return Strike
-"""
-cap = cv2.VideoCapture(video_path)
-Strike = BRS(cap, videoType, True)
-print(Strike)
-"""
