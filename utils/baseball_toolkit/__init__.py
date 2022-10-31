@@ -104,7 +104,7 @@ def detectStrike(pList, sBox):
 
 	return False
 			
-def start(frame, yolo_model):
+def startRecording(frame, yolo_model):
 	Pred = yoloPred(frame, yolo_model)
 	head_center = [0, 0]
 	glove_center = [0, 0]
