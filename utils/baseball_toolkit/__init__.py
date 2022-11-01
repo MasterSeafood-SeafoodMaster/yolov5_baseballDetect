@@ -105,17 +105,24 @@ def detectStrike(pList, sBox):
 	return False
 			
 def startRecording(frame, yolo_model):
+	isRecord = False
 	Pred = yoloPred(frame, yolo_model)
 	head_center = [0, 0]
 	glove_center = [0, 0]
+	frame = cv2.resize(frame, (384, 640))
 
 	for i in range(len(Pred)):
 		if Pred[i][5]==0:
 			head_center = [Pred[i][0]+((Pred[i][2]-Pred[i][0])/2), Pred[i][1]+((Pred[i][3]-Pred[i][1])/2)]
+			frame = cv2.rectangle(frame, (Pred[i][0], Pred[i][1]), (Pred[i][2],Pred[i][3]), (255, 0, 0), 2)
+
 		if Pred[i][5]==1:
 			glove_center = [Pred[i][0]+((Pred[i][2]-Pred[i][0])/2), Pred[i][1]+((Pred[i][3]-Pred[i][1])/2)]
+			frame = cv2.rectangle(frame, (Pred[i][0], Pred[i][1]), (Pred[i][2],Pred[i][3]), (0, 0, 255), 2)
 
 	if glove_center[1]<head_center[1]:
-		return True
+		isRecord = True
 	else:
-		return False
+		isRecord = False
+
+	return isRecord, frame

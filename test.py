@@ -10,11 +10,14 @@ cap = cv2.VideoCapture("./testing_data/test01.mp4")
 f_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 for i in range(f_count):
 	ret, frame = cap.read()
-	print(bt.startRecording(frame, hg_model))
+
+	isRecord, frame = bt.startRecording(frame, hg_model)
+	print(isRecord)
 
 	cv2.imshow("live", frame)
-	cv2.waitKey(100)
+	cv2.waitKey(1)
 
+cap = cv2.VideoCapture("./testing_data/test01.mp4")
 Strike = BRS(cap, "behind", True, baseball_model)
 print(Strike)
 
