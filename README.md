@@ -56,7 +56,7 @@ print(Strike)
 ---
 
 ## Demo
-![demo video](DEMO_VIDEO.gif)
+![demo video](./img/DEMO_VIDEO.gif)
 
 ---
 
