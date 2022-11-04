@@ -56,12 +56,7 @@ print(Strike)
 ---
 
 ## Demo
-<<<<<<< HEAD
 ![demo video](DEMO_VIDEO.gif)
-=======
-
-https://github.com/MasterSeafood-SeafoodMaster/yolov5_baseballDetect/blob/main/img/DEMO_VIDEO.mp4
->>>>>>> 7fec8e59200e4e3aa7b49c87143d449f93953eda
 
 ---
 
