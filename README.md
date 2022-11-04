@@ -68,3 +68,4 @@ print(Strike)
 [^5]: *Tomas Simon, Hanbyul Joo, Iain Matthews and Yaser Sheikh. "Hand Keypoint Detection in Single Images using Multiview Bootstrapping." CVPR (2017) arXiv:1704.07809 (2017)*
 [^6]: *Shih-En Wei, Varun Ramakrishna, Takeo Kanade, Yaser Sheikh. "Convolutional pose machines" arXiv:1602.00134 (2016)*
 [^7]: *Tsung-Yi Lin, Michael Maire, Serge Belongie, Lubomir Bourdev, Ross Girshick, James Hays, Pietro Perona, Deva Ramanan, C. Lawrence Zitnick and Piotr Dollar. "Microsoft COCO: Common Objects in Context." arXiv:1405.0312v3 (2015)*
+
