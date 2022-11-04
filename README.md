@@ -56,7 +56,7 @@ print(Strike)
 ---
 
 ## Demo
-
+https://github.com/MasterSeafood-SeafoodMaster/yolov5_baseballDetect/blob/main/img/DEMO_VIDEO.mp4
 
 ---
 
